@@ -1,0 +1,28 @@
+# --- MKC workspace: ignore generated/archival data and local envs ---
+
+# Cloned source repos (synced separately, not committed)
+repos/
+
+# ChatGPT / research archive (local, large)
+content-archive/
+
+# Databases / local data
+*.db
+*.sqlite*
+data/
+logs/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+backend/.venv/
+backend/instance/
+
+# Node
+node_modules/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
