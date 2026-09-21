@@ -41,9 +41,11 @@ __all__ = [
     "Contradiction",
     "Decision",
     "Document",
+    "DocumentUpdateTrigger",
     "Entity",
     "EntityRelation",
     "Experiment",
+    "GeneratedDocument",
     "Insight",
     "KnowledgeObject",
     "Report",
@@ -452,3 +454,7 @@ class Report(Base):
             "generated_at": self.generated_at.isoformat() if self.generated_at else None,
             "summary": self.summary,
         }
+
+
+# Import documentation models
+from mkc.models.documentation import GeneratedDocument, DocumentUpdateTrigger
