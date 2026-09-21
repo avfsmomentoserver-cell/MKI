@@ -38,6 +38,7 @@ from mkc.core.database import Base
 
 __all__ = [
     "AuditLog",
+    "BookChapter",
     "Contradiction",
     "Decision",
     "Document",
@@ -45,6 +46,7 @@ __all__ = [
     "Entity",
     "EntityRelation",
     "Experiment",
+    "GeneratedBook",
     "GeneratedDocument",
     "Insight",
     "KnowledgeObject",
@@ -463,3 +465,6 @@ from mkc.models.documentation import GeneratedDocument, DocumentUpdateTrigger
 
 # Import research models
 from mkc.models.research import ScheduledResearchTask, ResearchTaskExecution
+
+# Import book models
+from mkc.models.books import GeneratedBook, BookChapter
