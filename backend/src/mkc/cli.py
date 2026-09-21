@@ -11,6 +11,7 @@ Subcommands (stable signatures — the intelligence wave fills the bodies):
   (works without the API running).
 - ``mkc report <type>``: generate a registry report and print its path
   plus the top summary lines.
+- ``mkc research <task_type>``: run a research task (analyze_gaps, generate_hypotheses, synthesis, etc.)
 """
 
 from __future__ import annotations
@@ -277,6 +278,60 @@ def cmd_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_research(args: argparse.Namespace) -> int:
+    """Run a research task."""
+    import asyncio
+    from mkc.core.database import get_session_factory
+    from mkc.intelligence.research.runner import ResearchTaskRunner, ResearchTaskType
+
+    task_type_map = {
+        "analyze_gaps": ResearchTaskType.ANALYZE_GAPS,
+        "generate_hypotheses": ResearchTaskType.GENERATE_HYPOTHESES,
+        "synthesis": ResearchTaskType.SYNTHESIS,
+        "contradiction_deep_dive": ResearchTaskType.CONTRADICTION_DEEP_DIVE,
+        "cross_source_analysis": ResearchTaskType.CROSS_SOURCE_ANALYSIS,
+    }
+
+    if args.task_type not in task_type_map:
+        print(
+            f"research: unknown task type {args.task_type!r} "
+            f"(supported: {', '.join(task_type_map.keys())})",
+            file=sys.stderr,
+        )
+        return 1
+
+    task_type = task_type_map[args.task_type]
+    
+    try:
+        with get_session_factory()() as session:
+            runner = ResearchTaskRunner()
+            result = asyncio.run(runner.run_task(task_type, session))
+            
+            print(f"research task: {result.task_type.value}")
+            print(f"status: {result.status}")
+            print(f"started at: {result.started_at}")
+            print(f"completed at: {result.completed_at}")
+            
+            if result.error:
+                print(f"error: {result.error}", file=sys.stderr)
+                return 1
+            
+            print(f"\nfindings:")
+            for finding in result.findings:
+                print(f"  - {finding[:200]}")
+            
+            print(f"\nstatistics:")
+            print(f"  insights generated: {result.insights_generated}")
+            print(f"  contradictions found: {result.contradictions_found}")
+            print(f"  hypotheses generated: {result.hypotheses_generated}")
+            
+    except Exception as exc:  # noqa: BLE001 - CLI: print and fail closed
+        print(f"research task failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 1
+    
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the argparse tree (subcommands with stable names/flags)."""
     parser = argparse.ArgumentParser(prog="mkc", description=BANNER)
@@ -304,6 +359,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_report.add_argument("report_type", choices=["project-knowledge", "research-gaps", "implementation-plan"])
     p_report.add_argument("--output-dir", default=None, help="output directory (default: <workspace>/reports)")
     p_report.set_defaults(func=cmd_report)
+
+    p_research = sub.add_parser("research", help="run a research task")
+    p_research.add_argument("task_type", choices=["analyze_gaps", "generate_hypotheses", "synthesis", "contradiction_deep_dive", "cross_source_analysis"])
+    p_research.set_defaults(func=cmd_research)
 
     return parser
 

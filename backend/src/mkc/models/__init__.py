@@ -50,6 +50,8 @@ __all__ = [
     "KnowledgeObject",
     "Report",
     "ResearchItem",
+    "ResearchTaskExecution",
+    "ScheduledResearchTask",
     "Source",
     "new_uuid",
     "utcnow",
@@ -458,3 +460,6 @@ class Report(Base):
 
 # Import documentation models
 from mkc.models.documentation import GeneratedDocument, DocumentUpdateTrigger
+
+# Import research models
+from mkc.models.research import ScheduledResearchTask, ResearchTaskExecution
