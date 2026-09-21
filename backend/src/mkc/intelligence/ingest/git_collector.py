@@ -53,6 +53,34 @@ _LOG_MARKER = "@@@COMMIT@@@"
 _FIELD_SEP = "\x1f"
 
 
+def _is_safe_path(repo_root: Path, candidate: Path) -> bool:
+    """Check if a candidate path is safe to read (T-N1: symlink containment).
+
+    Returns False if:
+    - The resolved path is outside the resolved repo root
+    - The candidate path is a symlink (even if it points inside the repo)
+
+    This prevents directory traversal via symlinks that could escape the repo.
+    """
+    try:
+        resolved_repo = repo_root.resolve()
+        resolved_candidate = candidate.resolve()
+    except (OSError, RuntimeError):
+        return False
+    
+    # Check if the resolved path is inside the resolved repo
+    try:
+        resolved_candidate.relative_to(resolved_repo)
+    except ValueError:
+        return False
+    
+    # Reject symlinks even if they point inside the repo
+    if candidate.is_symlink():
+        return False
+    
+    return True
+
+
 def _read_text_bounded(path: Path, limit: int) -> Optional[str]:
     """Read up to *limit* bytes as UTF-8 text; ``None`` when unreadable."""
     try:
@@ -285,6 +313,10 @@ class GitRepoCollector(CollectionRunner):
             if should_skip_path(relative):
                 continue
             absolute = self.repo_path / relative
+            # T-N1: Symlink containment check
+            if not _is_safe_path(self.repo_path, absolute):
+                logger.debug("Skipping unsafe path (symlink or outside repo): %s", relative)
+                continue
             try:
                 size = absolute.stat().st_size
             except OSError:

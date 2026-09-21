@@ -21,7 +21,7 @@ MarkupSafe==3.0.3
 mdurl==0.1.2
 # Editable install of the local backend package (set GITHUB_TOKEN in env if
 # pulling from a private remote; never embed credentials in this file).
--e git+https://github.com/avfsmomentoserver-cell/MKI.git@4b0877e4270ffdbecf680d476a9a1d13ddc9ebc5#egg=mkc&subdirectory=backend
+-e .
 numpy==2.5.3
 packaging==26.3
 pluggy==1.6.0

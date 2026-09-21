@@ -38,6 +38,28 @@ from mkc.intelligence.ingest.base import EXTRACTION_METHOD, slugify_text
 
 logger = logging.getLogger("mkc.parsing.extractor")
 
+# T-D1: Simple secret pattern detection (not exhaustive, basic safety net)
+_SECRET_PATTERNS = [
+    r'(?i)(?:api[_-]?key|apikey|secret|token|password|passwd|pwd)[\s=:]+[\'"]?[a-zA-Z0-9_\-]{20,}[\'"]?',
+    r'(?i)ghp_[a-zA-Z0-9]{36}',  # GitHub PAT
+    r'(?i)gho_[a-zA-Z0-9]{36}',  # GitHub OAuth
+    r'(?i)ghu_[a-zA-Z0-9]{36}',  # GitHub user token
+    r'(?i)ghs_[a-zA-Z0-9]{36}',  # GitHub server token
+    r'(?i)ghr_[a-zA-Z0-9]{36}',  # GitHub refresh token
+    r'(?i)sk_[a-zA-Z0-9]{32,}',  # Stripe secret key
+    r'(?i)pk_[a-zA-Z0-9]{32,}',  # Stripe publishable key
+    r'(?i)AKIA[0-9A-Z]{16}',  # AWS access key
+]
+
+def _mask_secrets(text: str) -> str:
+    """Replace detected secret patterns with placeholders (T-D1)."""
+    masked = text
+    for pattern in _SECRET_PATTERNS:
+        if re.search(pattern, masked):
+            masked = re.sub(pattern, '[SECRET_REDACTED]', masked, flags=re.IGNORECASE)
+            logger.warning("Secret pattern detected and masked in extracted text")
+    return masked
+
 CHUNK_MAX_CHARS = 2000
 MIN_CHUNK_CHARS = 40
 CONFIDENCE_BASE = 0.30
@@ -81,7 +103,12 @@ class ExtractedObject:
     entities: list[tuple[str, str]] = field(default_factory=list)
 
     def stable_id(self) -> str:
-        """Deterministic 32-hex id from provenance + classification."""
+        """Deterministic 32-hex id from provenance + classification.
+
+        The id is scoped to the source (via source_id UUID) to prevent
+        cross-source collisions when different repos have identical content
+        at the same path.
+        """
         basis = "|".join([
             str(self.provenance.get("source_id", "")),
             str(self.provenance.get("source_location", "")),
@@ -261,7 +288,9 @@ class KnowledgeExtractor:
                      file_hash: str = "") -> list[ExtractedObject]:
         """Classify and extract from raw text (pure; no database access)."""
         objects: list[ExtractedObject] = []
-        for section, chunk in chunk_text(text):
+        # T-D1: Mask secrets in the raw text before processing
+        masked_text = _mask_secrets(text)
+        for section, chunk in chunk_text(masked_text):
             obj_type, lifecycle, signals = classify_chunk(chunk, doc_type, file_path)
             confidence = min(CONFIDENCE_MAX,
                              CONFIDENCE_BASE + CONFIDENCE_PER_SIGNAL * max(signals, 1))
@@ -427,6 +456,7 @@ class KnowledgeExtractor:
             file_hash = str(getattr(document, "file_hash", ""))
             doc_type = str(getattr(document, "doc_type", ""))
             source_id = str(getattr(document, "source_id", ""))
+            existing_ids: set[str] = set()  # Initialize before try block to avoid NameError
             try:
                 text = getattr(document, "content", None) or self._load_document_text(
                     document, paths

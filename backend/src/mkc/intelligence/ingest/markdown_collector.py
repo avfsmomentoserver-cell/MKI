@@ -215,7 +215,7 @@ class MarkdownCollector(CollectionRunner):
             analysis = self._analyze(path, text)
             artifacts.append(RawArtifact(
                 source_type="markdown",
-                source_id=self.repo_name,
+                source_id=self._repo_name,  # Natural ID for Source lookup
                 path=relative,
                 content=content,
                 metadata={
@@ -234,10 +234,10 @@ class MarkdownCollector(CollectionRunner):
 
     def _persist_source(self, session: Any, result: Any) -> None:
         files = self.iter_markdown_files()
-        self._ensure_source(
+        self._source_row = self._ensure_source(
             session,
             source_type="markdown",
-            source_id=self.repo_name,
+            source_id=self._repo_name,
             path=str(self.dir_path),
             metadata={
                 "file_count": len(files),
@@ -251,7 +251,7 @@ class MarkdownCollector(CollectionRunner):
         section_tree = meta.get("section_tree")
         self._ensure_document(
             session,
-            source_id=self.repo_name,
+            source_row=getattr(self, "_source_row", None),
             file_path=artifact.path,
             file_hash=str(meta.get("sha256", "")),
             size_bytes=int(meta.get("size_bytes", 0)),

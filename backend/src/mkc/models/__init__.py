@@ -157,6 +157,12 @@ class KnowledgeObject(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
+    @classmethod
+    def select(cls):
+        """Return a SQLAlchemy select statement for this model."""
+        from sqlalchemy import select
+        return select(cls)
+
     def to_dict(self) -> dict[str, object]:
         """Serialize to a JSON-safe dict (UUIDs/datetimes -> strings)."""
         return {
@@ -236,6 +242,12 @@ class ResearchItem(Base):
     evidence_count: Mapped[int] = mapped_column(Integer, default=0)
     validation_level: Mapped[str] = mapped_column(String(64), default="")
     related_modules: Mapped[list] = mapped_column(JSONB, default=list)
+
+    @classmethod
+    def select(cls):
+        """Return a SQLAlchemy select statement for this model."""
+        from sqlalchemy import select
+        return select(cls)
 
     def to_dict(self) -> dict[str, object]:
         """Serialize to a JSON-safe dict."""
@@ -343,6 +355,12 @@ class Insight(Base):
     confidence: Mapped[float] = mapped_column(Float, default=0.5)
     status: Mapped[str] = mapped_column(String(32), default="needs_review", index=True)
 
+    @classmethod
+    def select(cls):
+        """Return a SQLAlchemy select statement for this model."""
+        from sqlalchemy import select
+        return select(cls)
+
     def to_dict(self) -> dict[str, object]:
         """Serialize to a JSON-safe dict."""
         return {
@@ -368,6 +386,12 @@ class Contradiction(Base):
     status: Mapped[str] = mapped_column(String(32), default="flagged", index=True)
     explanation: Mapped[str] = mapped_column(Text, default="")
     resolved_by: Mapped[str] = mapped_column(String(512), default="")
+
+    @classmethod
+    def select(cls):
+        """Return a SQLAlchemy select statement for this model."""
+        from sqlalchemy import select
+        return select(cls)
 
     def to_dict(self) -> dict[str, object]:
         """Serialize to a JSON-safe dict."""
