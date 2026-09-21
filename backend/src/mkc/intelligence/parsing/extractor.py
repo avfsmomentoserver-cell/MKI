@@ -107,10 +107,13 @@ class ExtractedObject:
 
         The id is scoped to the source (via source_id UUID) to prevent
         cross-source collisions when different repos have identical content
-        at the same path.
+        at the same path. Includes a source-specific salt to ensure
+        deterministic uniqueness per source.
         """
+        # Use source_id as a salt to ensure cross-source uniqueness
+        source_id = str(self.provenance.get("source_id", ""))
         basis = "|".join([
-            str(self.provenance.get("source_id", "")),
+            source_id,  # Source UUID as salt
             str(self.provenance.get("source_location", "")),
             self.obj_type,
             str(self.provenance.get("chunk_hash", "")),
@@ -414,11 +417,16 @@ class KnowledgeExtractor:
         except OSError:
             return None
 
-    def run(self, session: Any, limit: Optional[int] = None) -> ExtractionResult:
+    def run(self, session: Any, limit: Optional[int] = None, source_id: Optional[str] = None) -> ExtractionResult:
         """Extract knowledge from all eligible Documents in *session*.
 
         Idempotent: objects carry deterministic ids; superseded
         auto-generated rows (same file, stale hash) are replaced.
+        
+        Args:
+            session: Database session
+            limit: Optional limit on number of documents to process
+            source_id: Optional source UUID to filter documents (prevents cross-source extraction)
         """
         from mkc.intelligence.db_compat import get_model, model_query
 
@@ -431,19 +439,26 @@ class KnowledgeExtractor:
         docs = [d for d in docs
                 if str(getattr(d, "doc_type", "")) in
                 {"markdown", "code", "test", "chatgpt", "text"}]
+        
+        # Filter by source_id if provided to prevent cross-source extraction
+        if source_id is not None:
+            docs = [d for d in docs if str(getattr(d, "source_id", "")) == source_id]
+        
         if limit is not None:
             docs = docs[:limit]
 
         authors = self._author_map(session)
         paths = self._source_path_map(session)
 
-        existing_by_location: dict[str, list[Any]] = {}
+        existing_by_location: dict[tuple[str, str], list[Any]] = {}
         for row in session.execute(model_query(ko_model)).scalars().all():
             prov = getattr(row, "provenance", None) or {}
             if prov.get("extraction_method") != EXTRACTION_METHOD:
                 continue
             location = str(prov.get("source_location", ""))
-            existing_by_location.setdefault(location, []).append(row)
+            # Key by (source_id, location) to prevent cross-source collisions
+            source_id = str(prov.get("source_id", ""))
+            existing_by_location.setdefault((source_id, location), []).append(row)
 
         entities_seen: set[tuple[str, str]] = set()
         for row in session.execute(model_query(entity_model)).scalars().all():
@@ -469,7 +484,10 @@ class KnowledgeExtractor:
 
                 stale: list[Any] = []
                 fresh: list[Any] = []
-                for location, rows in existing_by_location.items():
+                for (existing_source_id, location), rows in existing_by_location.items():
+                    # Only consider KOs from the same source
+                    if existing_source_id != source_id:
+                        continue
                     if location.startswith(file_path + "#"):
                         for row in rows:
                             prov = getattr(row, "provenance", None) or {}

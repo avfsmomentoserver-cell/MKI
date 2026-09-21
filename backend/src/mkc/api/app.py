@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 
 from mkc import __version__
 from mkc.api.metrics import metrics
-from mkc.api.routers import context, decisions, experiments, ingest, knowledge, reports, research, search
+from mkc.api.routers import ai, context, decisions, experiments, ingest, knowledge, reports, research, search
 from mkc.core.auth import require_token
 from mkc.core.database import get_engine, get_session, get_session_factory
 
@@ -138,6 +138,7 @@ def create_app() -> FastAPI:
     app.include_router(reports.router)
     app.include_router(ingest.router)
     app.include_router(context.router)
+    app.include_router(ai.router)
 
     # -- error handlers (no stack traces ever reach clients) ---------------
     @app.exception_handler(Exception)

@@ -136,7 +136,10 @@ def cmd_ingest(args: argparse.Namespace) -> int:
                 print(f"  ! {line}", file=sys.stderr)
 
         with get_session_factory()() as session:
-            extraction = KnowledgeExtractor().run(session)
+            # Extract only from the ingested source to avoid cross-source collisions
+            source_row = getattr(collector, "_source_row", None)
+            source_id = getattr(source_row, "id", None) if source_row else None
+            extraction = KnowledgeExtractor().run(session, source_id=source_id)
             if extraction.errors:
                 print(f"extract: {len(extraction.errors)} error(s) recorded", file=sys.stderr)
                 for line in extraction.errors[:5]:

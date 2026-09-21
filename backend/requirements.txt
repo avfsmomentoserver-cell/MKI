@@ -19,6 +19,7 @@ Mako==1.4.1
 markdown-it-py==4.2.0
 MarkupSafe==3.0.3
 mdurl==0.1.2
+openai>=1.0.0
 # Editable install of the local backend package (set GITHUB_TOKEN in env if
 # pulling from a private remote; never embed credentials in this file).
 -e .

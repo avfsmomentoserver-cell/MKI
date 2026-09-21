@@ -4,7 +4,7 @@ import { LIFECYCLE_STATES } from '../lib/constants'
 import { fmtAuditTime, fmtDate, pct } from '../lib/format'
 import { useMkc, useQuery } from '../state'
 import { BarChart, Sparkline } from '../components/charts'
-import { Badge, Card, PageHeader, Spinner, StateMessage, badgeToneForState, lifecycleTone } from '../components/ui'
+import { Badge, Card, PageHeader, Spinner, StateMessage, lifecycleTone } from '../components/ui'
 
 export function OverviewPage() {
   const { key } = useMkc()
@@ -29,11 +29,6 @@ export function OverviewPage() {
   const byType = Object.entries(statusData.by_type).sort((a, b) => b[1] - a[1])
   const lifecycleData = LIFECYCLE_STATES.map((st) => ({ label: st, value: statusData.by_lifecycle_state[st] ?? 0 })).filter((d) => d.value > 0)
   const activity = statusData.recent_activity ?? []
-  const activityValues = activity.map((a) => {
-    const d = new Date(a.at ?? 0)
-    const h = d.getHours()
-    return `T${String(h).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  })
   const flagged = (c.data ?? []).filter((x) => x.status === 'flagged')
   const topTypes = byType.slice(0, 8)
 
