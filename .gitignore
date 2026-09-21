@@ -28,3 +28,7 @@ node_modules/
 .env.*
 !.env.example
 backend/src/mkc.egg-info/
+
+# Local scratch / session logs (may contain secrets)
+impress_me_with_full_implementation_clo_.json
+e2e_ingest.log
