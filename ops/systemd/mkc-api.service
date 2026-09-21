@@ -1,0 +1,38 @@
+# mkc-api.service — MKC (Momento Knowledge Core) FastAPI backend
+#
+# Deployment path for this host: venv + uvicorn + systemd (no Docker).
+#
+# Enable (one-time, needs root):
+#   sudo cp ops/systemd/mkc-api.service /etc/systemd/system/mkc-api.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now mkc-api.service
+# Verify:
+#   curl -s localhost:8000/healthz
+#   journalctl -u mkc-api.service -f    # live logs
+#
+# All configuration (DATABASE_URL, MKC_API_TOKEN, ...) is read from the
+# repo's .env via EnvironmentFile below. Do not inline secrets in this unit.
+
+[Unit]
+Description=MKC API (uvicorn, FastAPI factory mkc.api.app:create_app)
+After=network.target postgresql.service
+Wants=postgresql.service
+# Crash-loop protection: max 5 starts within 60s, then give up.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/MKI/backend
+EnvironmentFile=/home/admin/MKI/.env
+ExecStart=/home/admin/MKI/backend/.venv/bin/uvicorn mkc.api.app:create_app --factory --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+# Hardening: drop privileges, read-only system dirs (home stays writable so
+# the backend can use its gitignored working data).
+NoNewPrivileges=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

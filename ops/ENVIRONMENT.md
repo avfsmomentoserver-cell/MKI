@@ -34,7 +34,7 @@ git config user.email "mkc-build@local"
 - Package: `postgresql` 17.11 (Debian 17.11-0+deb13u1), installed via `apt-get install -y postgresql postgresql-contrib`
 - Plus: `postgresql-17-pgvector` (for the `vector` extension)
 - Cluster: `17/main` on port **5432**, status **online** (Debian manages it; `service postgresql start` / `pg_ctlcluster 17 main start` to restart if needed)
-- Role: `mkc` (LOGIN, password `mkc`)
+- Role: `mkc` (LOGIN, password `CHANGE_ME`)
 - Database: `mkc` (owner `mkc`)
 - Extensions in `mkc` DB: `hstore 1.8`, `vector 0.8.0` (pgvector), `plpgsql 1.0`
 
@@ -45,17 +45,17 @@ git config user.email "mkc-build@local"
 | Host       | `localhost`                                  |
 | Port       | `5432`                                       |
 | User       | `mkc`                                        |
-| Password   | `mkc`                                        |
+| Password   | `CHANGE_ME`                                        |
 | Database   | `mkc`                                        |
-| psql URL   | `postgresql://mkc:mkc@localhost:5432/mkc`    |
-| SQLAlchemy | `postgresql+psycopg://mkc:mkc@localhost:5432/mkc` |
+| psql URL   | `postgresql://mkc:CHANGE_ME@localhost:5432/mkc`    |
+| SQLAlchemy | `postgresql+psycopg://mkc:CHANGE_ME@localhost:5432/mkc` |
 
-Verified: `PGPASSWORD=mkc psql -h localhost -U mkc -d mkc -c 'SELECT 1'` → returned `1`.
+Verified: `PGPASSWORD=CHANGE_ME psql -h localhost -U mkc -d mkc -c 'SELECT 1'` → returned `1`.
 
 Create role/DB from scratch (as superuser `postgres`):
 
 ```bash
-sudo -u postgres psql -c "CREATE ROLE mkc WITH LOGIN PASSWORD 'mkc';"
+sudo -u postgres psql -c "CREATE ROLE mkc WITH LOGIN PASSWORD 'CHANGE_ME';"
 sudo -u postgres psql -c "CREATE DATABASE mkc OWNER mkc;"
 sudo -u postgres psql -d mkc -c "CREATE EXTENSION IF NOT EXISTS hstore;"
 sudo -u postgres psql -d mkc -c "CREATE EXTENSION IF NOT EXISTS vector;"
@@ -71,13 +71,13 @@ sudo -u postgres psql -d mkc -c "CREATE EXTENSION IF NOT EXISTS vector;"
 ```ini
 POSTGRES_HOST=localhost
 POSTGRES_USER=mkc
-POSTGRES_PASSWORD=mkc
+POSTGRES_PASSWORD=CHANGE_ME
 POSTGRES_DB=mkc
-DATABASE_URL=postgresql+psycopg://mkc:mkc@localhost:5432/mkc
-MKC_API_TOKEN=c395def504c0b7ac09293760b00e3fc1b567b993
+DATABASE_URL=postgresql+psycopg://mkc:CHANGE_ME@localhost:5432/mkc
+MKC_API_TOKEN=CHANGE_ME
 ```
 
-- **`MKC_API_TOKEN` = `c395def504c0b7ac09293760b00e3fc1b567b993`** (40-char hex, generated with `openssl rand -hex 20`).
+- **`MKC_API_TOKEN` = `CHANGE_ME`** (40-char hex, generated with `openssl rand -hex 20`).
   This is the local dev shared secret for the MKC REST API; it stays on this machine and in this
   gitignored file. Any service/client that needs API access reads it from `.env`.
 - `/home/admin/MKI/.env.example` — committed template with `CHANGE_ME` placeholders. Copy with
@@ -220,11 +220,11 @@ git config user.email "mkc-build@local"
 # 2. Postgres (install only once)
 sudo apt-get install -y postgresql postgresql-contrib postgresql-17-pgvector
 sudo service postgresql start            # or: sudo pg_ctlcluster 17 main start
-sudo -u postgres psql -c "CREATE ROLE mkc WITH LOGIN PASSWORD 'mkc';"      # if absent
+sudo -u postgres psql -c "CREATE ROLE mkc WITH LOGIN PASSWORD 'CHANGE_ME';"      # if absent
 sudo -u postgres psql -c "CREATE DATABASE mkc OWNER mkc;"                  # if absent
 sudo -u postgres psql -d mkc -c "CREATE EXTENSION IF NOT EXISTS hstore;"
 sudo -u postgres psql -d mkc -c "CREATE EXTENSION IF NOT EXISTS vector;"
-PGPASSWORD=mkc psql -h localhost -U mkc -d mkc -c 'SELECT 1'               # expect 1
+PGPASSWORD=CHANGE_ME psql -h localhost -U mkc -d mkc -c 'SELECT 1'               # expect 1
 
 # 3. Env vars
 cp -n .env.example .env                 # then fill values (or use the existing .env)

@@ -11,6 +11,7 @@ content-archive/
 *.sqlite*
 data/
 logs/
+backups/
 
 # Python
 __pycache__/
@@ -26,3 +27,4 @@ node_modules/
 .env
 .env.*
 !.env.example
+backend/src/mkc.egg-info/

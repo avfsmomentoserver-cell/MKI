@@ -1,0 +1,40 @@
+# mkc.service — MKC (Momento Knowledge Core) FastAPI backend.
+#
+# Deployment path for this host: venv + uvicorn + systemd (no Docker —
+# see ops/DEPLOYMENT.md, "Porting notes").
+#
+# Enable (one-time, needs root) — exact commands are in ops/DEPLOYMENT.md:
+#   sudo cp ops/mkc.service /etc/systemd/system/mkc.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now mkc.service
+# Verify:
+#   curl -s http://127.0.0.1:8000/healthz
+#   journalctl -u mkc.service -f        # live logs (stdout/stderr -> journal)
+#
+# NOTE on EnvironmentFile: deliberately OMITTED. mkc.core.config loads the
+# repo-root .env itself (SettingsConfigDict(env_file=<repo>/.env) in
+# backend/src/mkc/core/config.py, plus a manual .env parser fallback for
+# DATABASE_URL). systemd's EnvironmentFile parser differs from pydantic's
+# (quote/comment handling), so keeping exactly one consumer of .env avoids
+# divergence. If you later set vars exclusively for the process (e.g.
+# MKC_ENV=prod), add `Environment=...` lines here rather than EnvironmentFile.
+
+[Unit]
+Description=MKC API (uvicorn, FastAPI factory mkc.api.app:create_app)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/MKI/backend
+ExecStart=/home/admin/MKI/backend/.venv/bin/uvicorn mkc.api.app:create_app --factory --host 127.0.0.1 --port 8000 --app-dir src
+Restart=on-failure
+RestartSec=5
+# stdout/stderr go to the journal:
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mkc
+
+[Install]
+WantedBy=multi-user.target

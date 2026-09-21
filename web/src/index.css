@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+/*
+ * MKC dashboard design tokens.
+ *
+ * The dashboard is a dark "operations console": zinc/slate surfaces, a single
+ * indigo accent, monospace for ids/hashes/dates. The `.dark` class (set on
+ * <html> by main.tsx) is the product default palette.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Light palette (fallback if .dark is absent) */
+  --color-bg: #f4f5f7;
+  --color-panel: #ffffff;
+  --color-raised: #eceef2;
+  --color-line: #dfe3e9;
+  --color-ink: #1d232b;
+  --color-muted: #51606f;
+  --color-faint: #7c8896;
+  --color-accent: #4f46e5;
+  --color-accent-strong: #4338ca;
+  --color-accent-soft: rgba(79, 70, 229, 0.12);
+  --color-ok: #1a7f37;
+  --color-warn: #9a6700;
+  --color-danger: #cf222e;
+  --color-info: #0969da;
+
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+}
+
+.dark {
+  --color-bg: #0d1117;
+  --color-panel: #131820;
+  --color-raised: #1a212c;
+  --color-line: #29323f;
+  --color-ink: #e6ebf2;
+  --color-muted: #98a4b4;
+  --color-faint: #647080;
+  --color-accent: #818cf8;
+  --color-accent-strong: #a5b4fc;
+  --color-accent-soft: rgba(129, 140, 248, 0.16);
+  --color-ok: #4cc26e;
+  --color-warn: #d8a13a;
+  --color-danger: #f0716a;
+  --color-info: #6cb6ff;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-bg text-ink antialiased;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  font-size: 14px;
+}
+
+/* One global visible focus style for keyboard users (WCAG 2.4.7). */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+}
+
+/* Thin scrollbars that follow the theme. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

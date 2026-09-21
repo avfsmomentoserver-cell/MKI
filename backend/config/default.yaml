@@ -1,0 +1,16 @@
+# MKC default configuration (sample).
+#
+# NOTE: at runtime the backend reads environment variables / the repo-root
+# .env file (see mkc.core.config). This file is the documented default set,
+# kept in sync for operators; it is not auto-loaded.
+mkc:
+  env: dev
+  log_level: INFO
+  # SQLAlchemy 2.0 URL for the MKC Postgres database.
+  database_url: postgres://mkc:mkc@localhost:5432/mkc
+  # Bearer token required for all /api/v1/* routes. NEVER commit a real value.
+  api_token: "CHANGE-ME"
+  # Base URL the `mkc` CLI uses to reach the API.
+  api_base_url: http://127.0.0.1:8000
+  # Test database used by the pytest suite.
+  test_database_url: postgresql+psycopg://mkc:mkc@localhost:5432/mkc_test
