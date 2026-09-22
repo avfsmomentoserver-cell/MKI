@@ -109,6 +109,8 @@ class ExtractedObject:
         cross-source collisions when different repos have identical content
         at the same path. Includes a source-specific salt to ensure
         deterministic uniqueness per source.
+        
+        Returns a UUID-formatted string (32 hex chars with hyphens) for database compatibility.
         """
         # Use source_id as a salt to ensure cross-source uniqueness
         source_id = str(self.provenance.get("source_id", ""))
@@ -118,7 +120,9 @@ class ExtractedObject:
             self.obj_type,
             str(self.provenance.get("chunk_hash", "")),
         ])
-        return hashlib.sha256(basis.encode("utf-8")).hexdigest()[:32]
+        hex_id = hashlib.sha256(basis.encode("utf-8")).hexdigest()[:32]
+        # Convert to UUID format: 8-4-4-4-12
+        return f"{hex_id[:8]}-{hex_id[8:12]}-{hex_id[12:16]}-{hex_id[16:20]}-{hex_id[20:]}"
 
 
 @dataclass
@@ -291,6 +295,8 @@ class KnowledgeExtractor:
                      file_hash: str = "") -> list[ExtractedObject]:
         """Classify and extract from raw text (pure; no database access)."""
         objects: list[ExtractedObject] = []
+        # Ensure source_id is a string for consistent handling
+        source_id_str = str(source_id)
         # T-D1: Mask secrets in the raw text before processing
         masked_text = _mask_secrets(text)
         for section, chunk in chunk_text(masked_text):
@@ -315,7 +321,7 @@ class KnowledgeExtractor:
                         confidence=0.7,
                         provenance={
                             "source_type": source_type,
-                            "source_id": source_id,
+                            "source_id": source_id_str,
                             "source_location": f"{file_path}#{section}::{name}",
                             "original_text": chunk[:2000],
                             "extraction_method": EXTRACTION_METHOD,
@@ -341,7 +347,7 @@ class KnowledgeExtractor:
                 confidence=confidence,
                 provenance={
                     "source_type": source_type,
-                    "source_id": source_id,
+                    "source_id": source_id_str,
                     "source_location": f"{file_path}#{section}",
                     "original_text": chunk[:2000],
                     "extraction_method": EXTRACTION_METHOD,
@@ -442,7 +448,7 @@ class KnowledgeExtractor:
         
         # Filter by source_id if provided to prevent cross-source extraction
         if source_id is not None:
-            docs = [d for d in docs if str(getattr(d, "source_id", "")) == source_id]
+            docs = [d for d in docs if str(getattr(d, "source_id", "")) == str(source_id)]
         
         if limit is not None:
             docs = docs[:limit]
@@ -457,8 +463,8 @@ class KnowledgeExtractor:
                 continue
             location = str(prov.get("source_location", ""))
             # Key by (source_id, location) to prevent cross-source collisions
-            source_id = str(prov.get("source_id", ""))
-            existing_by_location.setdefault((source_id, location), []).append(row)
+            row_source_id = str(prov.get("source_id", ""))
+            existing_by_location.setdefault((row_source_id, location), []).append(row)
 
         entities_seen: set[tuple[str, str]] = set()
         for row in session.execute(model_query(entity_model)).scalars().all():
@@ -486,7 +492,7 @@ class KnowledgeExtractor:
                 fresh: list[Any] = []
                 for (existing_source_id, location), rows in existing_by_location.items():
                     # Only consider KOs from the same source
-                    if existing_source_id != source_id:
+                    if existing_source_id != str(source_id):
                         continue
                     if location.startswith(file_path + "#"):
                         for row in rows:
@@ -503,7 +509,7 @@ class KnowledgeExtractor:
                 objects = self.extract_text(
                     text,
                     source_type=source_type,
-                    source_id=source_id,
+                    source_id=str(source_id),
                     file_path=file_path,
                     doc_type=doc_type,
                     author=author_for_doc,
